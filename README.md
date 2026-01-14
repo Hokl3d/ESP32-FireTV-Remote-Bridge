@@ -9,6 +9,16 @@ Dieses Projekt ermöglicht es, eine **Amazon Fire TV Fernbedienung (Modell BE59C
 * **Nutzung auf eigene Gefahr:** Ich übernehme keine Garantie für die Funktion oder Sicherheit.
 * **Helfende Hände gesucht:** Wenn du Ahnung von ESP-IDF oder Bluetooth hast und siehst, dass ich Fehler gemacht habe – bitte erstelle einen Pull Request! Ich freue mich über jede Hilfe, um zu lernen.
 
+🔍 Hinweis: Keine HID‑Schicht, keine HID‑Parser – reine L2CAP‑Rohdaten
+Dieses Projekt verwendet keinen HID‑Stack und keinen HID‑Parser des ESP32.
+Die Fire‑TV‑Fernbedienung wird nicht als HID‑Gerät verarbeitet. Stattdessen liest der ESP32 die Tastensignale direkt als rohe L2CAP‑Pakete vom HID‑Interrupt‑Channel (PSM 0x13) und wertet die relevanten Bytes manuell aus.
+
+Das bedeutet:
+-keine HIDH‑API
+-kein HID‑Report‑Descriptor
+-keine automatische HID‑Interpretation
+-die Tasten werden ausschließlich anhand der empfangenen Bytes (A1 XX YY ZZ 3B) interpretiert
+
 ---
 
 ## 🚀 Aktueller Stand
