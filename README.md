@@ -55,7 +55,9 @@ Das bedeutet:
 Der Code erkennt folgende Tasten:
 * **Steuerkreuz:** Hoch, Runter, Links, Rechts, OK
 * **Media:** Play/Pause, Vorspulen, Zurückspulen
-* **System:** Home, Zurück, Menü, Mikrofon
+* **System:** Home, Zurück, Menü,
+  
+* Mikrofon wird nicht unterstützt!
 
 ## 📜 Lizenz
 Dieses Projekt steht unter der **MIT-Lizenz**. Das bedeutet: Du kannst damit machen, was du willst, aber es gibt keinerlei Garantie oder Haftung meinerseits.
