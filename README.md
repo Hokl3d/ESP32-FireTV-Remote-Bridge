@@ -36,19 +36,26 @@ Das bedeutet:
 
 ## 📦 Installation
 
+⚠️ Wichtiger Hinweis zu den Systemeinstellungen (menuconfig)
+Dieses Projekt nutzt eine spezifische Konfiguration des ESP-IDF (insbesondere für Bluetooth Classic und den L2CAP-Support). 
+Ich habe die `sdkconfig` dem Repository beigefügt. Bitte nutze diese Datei, da es sonst zu Kompilierfehlern kommt, weil Standard-Projekte meist nicht für Bluetooth Classic konfiguriert sind.
+
 1.  **Code anpassen:**
-    Öffne die `main.c` und trage deine MAC-Adresse ein:
+    Öffne die `main.c` und trage deine MAC-Adresse, Wlan Daten und IP des Wiim ein:
+    #define WIFI_SSID      "DEIN_WLAN_NAME"
+    #define WIFI_PASSWORD  "DEIN_PASSWORT"
+    #define WIIM_IP        "192.168.xxx.xxx"
     ```c
     esp_bd_addr_t remote_bda = {0xXX, 0xXX, 0xXX, 0xXX, 0xXX, 0xXX};
     ```
 
-2.  **Kompilieren und Flashen:**
+3.  **Kompilieren und Flashen:**
     ```bash
     idf.py build
     idf.py flash monitor
     ```
 
-3.  **Verbinden:**
+4.  **Verbinden:**
     Drücke eine Taste auf der Fernbedienung, während der ESP32 läuft. Im Terminal-Monitor sollten die gedrückten Tasten erscheinen.
 
 ## 🗺 Key Mapping
