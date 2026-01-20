@@ -9,7 +9,7 @@ The ESP32 reads the button events **directly from raw L2CAP packets** and transl
 
 ## ⚠️ Important Notice / Disclaimer
 
-> **This is my very first larger ESP32 project.**
+> **This is my very first ESP32 project.**
 
 * I am still learning ESP-IDF, Bluetooth Classic, and L2CAP.
 * A lot of this project was developed experimentally and with external help.
@@ -240,7 +240,7 @@ Der ESP32 liest die Tastensignale **direkt aus rohen L2CAP-Paketen** und überse
 
 ## ⚠️ Wichtiger Hinweis / Disclaimer
 
-> **Dies ist mein allererstes größeres ESP32-Projekt.**
+> **Dies ist mein allererstes ESP32-Projekt.**
 
 * Ich lerne ESP-IDF, Bluetooth Classic und L2CAP noch.
 * Vieles wurde experimentell entwickelt und mit externer Hilfe zusammengetragen.
