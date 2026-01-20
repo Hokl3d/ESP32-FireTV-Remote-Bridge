@@ -3,9 +3,9 @@
 Dieses Projekt ermöglicht es, eine **Amazon Fire TV Fernbedienung (Modell BE59CV)** per Bluetooth mit einem **ESP32** zu verbinden. Der ESP32 fängt die Tastensignale ab, damit man damit andere Geräte (wie den **WiiM Mini**) steuern kann.
 
 ## ⚠️ Wichtiger Hinweis (Disclaimer)
-**Dies ist mein allererstes Projekt.** Um ehrlich zu sein: Ich lerne gerade erst, wie das alles funktioniert. Ich habe mir vieles zusammengesucht und bin froh, dass es läuft – aber ich habe oft selbst keine Ahnung, warum der Code funktioniert (oder warum nicht).
+**Dies ist mein allererstes Projekt.** Ich lerne gerade erst, wie das alles funktioniert. Ich habe mir vieles zusammengesucht und bin froh, dass es läuft – aber ich habe oft selbst keine Ahnung, warum der Code funktioniert (oder warum nicht).
 
-* **Kein Support:** Ich kann absolut **keinen technischen Support** bieten. Wenn bei dir etwas nicht funktioniert, weiß ich wahrscheinlich leider auch nicht, woran es liegt.
+* **Kein Support:** Ich kann absolut **keinen technischen Support** bieten. Wenn bei dir etwas nicht funktioniert, weiß ich wahrscheinlich leider auch nicht, woran es liegt. Ich nutze viel KI für technische Fragen.
 * **Nutzung auf eigene Gefahr:** Ich übernehme keine Garantie für die Funktion oder Sicherheit.
 * **Helfende Hände gesucht:** Wenn du Ahnung von ESP-IDF oder Bluetooth hast und siehst, dass ich Fehler gemacht habe – bitte erstelle einen Pull Request! Ich freue mich über jede Hilfe, um zu lernen.
 
