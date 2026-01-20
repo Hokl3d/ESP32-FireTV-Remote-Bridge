@@ -42,6 +42,7 @@ Ich habe die `sdkconfig` dem Repository beigefügt. Bitte nutze diese Datei, da 
 
 1.  **Code anpassen:**
     Öffne die `main.c` und trage deine MAC-Adresse, Wlan Daten und IP des Wiim ein:
+    
     #define WIFI_SSID      "DEIN_WLAN_NAME"
     #define WIFI_PASSWORD  "DEIN_PASSWORT"
     #define WIIM_IP        "192.168.xxx.xxx"
