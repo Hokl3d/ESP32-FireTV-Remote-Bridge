@@ -25,7 +25,7 @@ Das bedeutet:
 - [x] Bluetooth Classic Pairing
 - [x] Auslesen der Tastendaten über L2CAP Channels
 - [x] Mapping der Tasten (Home, Back, OK, Navigation, etc.)
-- [x] Integration der WiiM Mini HTTPS API  (Play,Next,Rewind,Volume)
+- [x] Integration der WiiM Mini HTTPS API  (Play,Next,Previous,Volume)
 - [ ] MQTT Unterstützung für Home Assistant (geplant)
 
 ## 🛠 Voraussetzungen
