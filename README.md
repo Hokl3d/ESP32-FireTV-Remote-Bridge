@@ -34,7 +34,7 @@ I am happy about any feedback and learning opportunity.
 
 ---
 
-## 🤖 Use of AI / Author’s Role
+## 🤖 Use of AI / My Role
 
 Large parts of this project were created **with the help of Artificial Intelligence (AI)**.
 
@@ -265,7 +265,7 @@ Ich freue mich über jedes Feedback und jede Lernmöglichkeit.
 
 ---
 
-## 🤖 Einsatz von KI / Rolle des Autors
+## 🤖 Einsatz von KI / Mein Beitrag 
 
 Große Teile dieses Projekts wurden **mit Hilfe von Künstlicher Intelligenz (KI)** erstellt.
 
