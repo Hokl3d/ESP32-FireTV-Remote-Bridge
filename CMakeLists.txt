@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "scan.c"
+    SRCS "test_bridge.c"
     INCLUDE_DIRS "."
     PRIV_REQUIRES 
         bt 
@@ -19,4 +19,5 @@ target_include_directories(${COMPONENT_LIB} PRIVATE
     "${IDF_PATH}/components/bt/common/include"
     "${IDF_PATH}/components/bt/common/osi/include"
 )
+
 
