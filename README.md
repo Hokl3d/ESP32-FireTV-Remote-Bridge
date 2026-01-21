@@ -1,7 +1,7 @@
 # ESP32 Fire TV Remote → WiiM Bridge 📺🎵
 
 This project connects an **Amazon Fire TV Remote (model BE59CV)** to an **ESP32** using **Bluetooth Classic**.
-The ESP32 reads the button events **directly from raw L2CAP packets** and translates them into **HTTP commands for a WiiM audio streamer** (e.g. WiiM Mini).
+The ESP32 reads the button events **directly from raw L2CAP packets** and translates them into **HTTPS request commands for a WiiM audio streamer** (e.g. WiiM Mini).
 
 👉 Goal: Use the Fire TV remote as an **alternative / universal remote** for other devices.
 
