@@ -6,57 +6,12 @@
  * @version        3.0
  * @requirements   ESP-IDF Version 5.5
  * * @copyright      Copyright (c) 2026 Hokl3d
- * * @license        MIT License
+ * * @license        MIT License
+
  * * @details        Diese Software ermöglicht die Steuerung eines WiiM Streamers
  * über eine Amazon Fire TV Fernbedienung mittels Bluetooth 
  * Classic L2CAP Channels. Optimiert für ESP-IDF 5.5.
  ******************************************************************************/
-
-#include <stdio.h>
-#include <string.h>
-#include "esp_log.h"
-#include "esp_bt.h"
-#include "esp_bt_main.h"
-#include "esp_gap_bt_api.h"
-#include "nvs_flash.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_bt_device.h"
-#include "osi/allocator.h"
-
-// WLAN
-#include "esp_wifi.h"
-#include "esp_event.h"
-#include "esp_netif.h"
-
-// HTTP Client
-#include "esp_http_client.h"
-#include "esp_tls.h"
-
-// L2CAP Zugriff
-#include "stack/l2c_api.h"
-#include "stack/bt_types.h"
-#include "stack/btm_api.h"
-
-static const char *TAG = "FIRE_TV_L2CAP";
-
-// ==================== KONFIGURATION (PLATZHALTER) ====================
-
-// WLAN Einstellungen
-#define WIFI_SSID      "DEIN_WLAN_NAME"
-#define WIFI_PASSWORD  "DEIN_WLAN_PASSWORT"
-
-// WiiM Einstellungen
-#define WIIM_IP        "192.168.xxx.xxx"
-
-// Fire TV Remote Adresse (MAC-Adresse)
-esp_bd_addr_t remote_bda = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-
-
-// ... ( restlichen Codes folgt hier unverändert)
-
 
 #include <stdio.h>
 #include <string.h>
@@ -785,4 +740,5 @@ void app_main(void) {
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+
 }
