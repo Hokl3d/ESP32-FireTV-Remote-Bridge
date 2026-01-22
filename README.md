@@ -124,7 +124,7 @@ Button events are interpreted **solely based on the received bytes**.
 
 ### Software
 
-* **ESP-IDF 5.5**
+* **ESP-IDF 5.5.2**
 * Bluetooth Classic enabled
 
 ### Knowledge
@@ -355,7 +355,7 @@ Die Tasten werden **ausschließlich anhand der empfangenen Bytes** interpretiert
 
 ### Software
 
-* **ESP-IDF 5.5**
+* **ESP-IDF 5.5.2**
 * Bluetooth Classic aktiviert
 
 ### Wissen
