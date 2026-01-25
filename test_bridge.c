@@ -1,8 +1,8 @@
 /******************************************************************************
  * @file           test_bridge.c
  * @brief          ESP32 Bridge: Fire TV Remote (L2CAP) to WiiM Audio (HTTP API)
- * @author         Dein Name Hokl3d
- * @date           2024-05-22
+ * @author         Hokl3d
+ * @date           2026-01-20
  * @version        3.0
  * @requirements   ESP-IDF Version 5.5
  * * @copyright      Copyright (c) 2026 Hokl3d
@@ -742,3 +742,4 @@ void app_main(void) {
     }
 
 }
+
