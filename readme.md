@@ -11,7 +11,7 @@ Bluetooth Classic (L2CAP) → WiFi → MQTT
 
 📌 Overview
 
-This project connects an Amazon Fire TV Remote (Bluetooth Classic) directly to an ESP32.
+This project connects an Amazon Fire TV Remote (Model BE59CV- Bluetooth Classic) directly to an ESP32.
 The ESP32 listens to raw L2CAP HID traffic, extracts button presses, and publishes them as JSON messages via MQTT.
 
 👉 Goal: Use a Fire TV remote as a physical input device for Home Assistant or any other MQTT-based smart home system.
@@ -223,7 +223,7 @@ MIT License
 
 📌 Übersicht
 
-Dieses Projekt verbindet eine Amazon Fire TV Fernbedienung (Bluetooth Classic) direkt mit einem ESP32.
+Dieses Projekt verbindet eine Amazon Fire TV Fernbedienung (Model BE59CV- Bluetooth Classic) direkt mit einem ESP32.
 Der ESP32 liest rohe L2CAP-HID-Daten, erkennt Tastendrücke und sendet diese als JSON per MQTT.
 
 👉 Ziel: Die Fire-TV-Fernbedienung als Eingabegerät für Home Assistant oder andere MQTT-basierte Systeme nutzen.
