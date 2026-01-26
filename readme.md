@@ -1,158 +1,144 @@
-## 🔄 Update: Migration to MQTT (v2.0)
-The previous version, which sent direct HTTPS commands to WiiM devices, has been moved to the `legacy_https_version` folder. This new version uses **MQTT**, making the setup significantly more flexible for modern smart homes.
-
----
-
-## ⚠️ Important Notice / Disclaimer
-> **This is my first-ever ESP32 project.**
-* I am still learning ESP-IDF, Bluetooth Classic, and L2CAP.
-* The code works in my environment, but there is **no guarantee** it will work for yours.
-* **No Support:** I cannot provide technical assistance for troubleshooting.
-* **Use at Your Own Risk:** No liability for damages or security issues.
-
----
-
-## 🔍 Technical Approach & Debouncing
-This project bypasses the standard HID abstraction layer for direct control:
-* **L2CAP Direct Access:** Manually registers PSMs `0x11` (Control) and `0x13` (Interrupt).
-* **Raw Data Parsing:** Button bytes are extracted directly from the `L2CA_DataInd_Cb`.
-* **Software Debouncing:** The code includes a check (`KEY_DEBOUNCE_MS = 200`) to prevent a single physical press from triggering multiple MQTT messages.
-
-
-
----
-
-## 🚀 Features
-* ✅ **Bluetooth Classic Pairing:** Handles SSP (Secure Simple Pairing) with auto-acceptance.
-* ✅ **Efficient Debouncing:** Filters signal noise using a 200ms threshold.
-* ✅ **MQTT Integration:** Sends JSON data including the button name and a timestamp.
-* ✅ **WiFi Management:** Features automatic reconnection logic.
-
----
-
-## 🛠 Configuration & Installation
-
-### 1. Adjust the Code
-Update these definitions in `firetv_remote2mqtt.c` to match your network:
-
-```c
-#define WIFI_SSID      "YOUR_SSID"
+ESP32 Fire TV Remote → MQTT Bridge 📺📡
+Version v0.2
+Bluetooth Classic (L2CAP) → WiFi → MQTT
+🇬🇧 English Version
+📌 Overview
+This project connects an Amazon Fire TV Remote (Bluetooth Classic) directly to an ESP32.
+The ESP32 listens to raw L2CAP HID traffic, extracts button presses, and publishes them as JSON messages via MQTT.
+👉 Goal: Use a Fire TV remote as a physical input device for Home Assistant or any other MQTT-based smart home system.
+🔄 Version History
+v0.2 (current)
+✅ MQTT-based architecture
+✅ Improved flexibility for smart home setups
+v0.1 (legacy)
+🔁 Direct HTTPS commands to WiiM devices
+📁 Available in the folder: legacy_https_version
+⚠️ Very Important Notice (ESP-IDF Version)
+🚨 This project was developed and tested exclusively with:
+ESP-IDF v5.5.2
+❗ Other ESP-IDF versions will very likely NOT work.
+Bluetooth Classic, Bluedroid, and internal L2CAP APIs are highly version-sensitive.
+✅ You MUST use:
+The provided CMakeLists.txt
+The provided sdkconfig / menuconfig
+Many required Bluetooth Classic and Bluedroid options were manually configured in menuconfig.
+Trying to recreate these settings manually is strongly discouraged.
+⚠️ Disclaimer
+This is my first ESP32 project.
+I am still learning ESP-IDF, Bluetooth Classic, and L2CAP internals.
+The code works in my environment, but there is no guarantee it will work in yours.
+❌ No support is provided.
+⚠️ Use at your own risk — no liability for damage or security issues.
+🤖 AI-Assisted Development Notice
+This project was created with the assistance of AI tools.
+Parts of the code may not follow best practices or be optimally structured.
+The focus was on functionality and learning, not on perfect architecture or elegance.
+I do not fully understand every low-level technical detail, especially within:
+Bluetooth Classic internals
+Bluedroid / L2CAP APIs
+The project is shared as-is, mainly for experimentation, learning, and inspiration.
+🔍 Technical Details
+Bluetooth Classic (Bluedroid)
+Direct L2CAP access
+Control PSM: 0x11
+Interrupt PSM: 0x13
+Raw HID parsing
+Button bytes extracted directly from L2CA_DataInd_Cb
+Software debouncing
+KEY_DEBOUNCE_MS = 200
+WiFi + MQTT
+JSON messages with button name + timestamp
+🚀 Features
+✅ Bluetooth Classic pairing (SSP auto-accept)
+✅ Direct L2CAP HID handling (no HID abstraction layer)
+✅ Software debouncing (200 ms)
+✅ MQTT publishing (JSON)
+✅ Automatic WiFi reconnection
+🛠 Configuration & Installation
+1️⃣ Requirements
+ESP32 with Bluetooth Classic
+ESP-IDF v5.5.2 (mandatory)
+MQTT Broker (e.g. Mosquitto, Home Assistant)
+2️⃣ Use the Provided Configuration
+⚠️ Do NOT skip this step
+Use the included:
+CMakeLists.txt
+sdkconfig
+Do NOT modify menuconfig unless you fully understand the Bluetooth options
+3️⃣ Adjust Network & Device Settings
+Edit firetv_remote2mqtt.c:
+Code kopieren
+C
+#define WIFI_SSID      "YOUR_WIFI"
 #define WIFI_PASSWORD  "YOUR_PASSWORD"
 #define MQTT_BROKER    "mqtt://192.168.xxx.xxx"
 
-// Enter the MAC address of your specific remote
-esp_bd_addr_t remote_bda = {0x00, 0x00, 0x00, 0x8D, 0x00, 0x00}; 
-2. Build Requirements
-ESP-IDF: v5.x (Tested with 5.5.2).
-
-
-Dependencies: bt, nvs_flash, and mqtt must be in your CMakeLists.txt. 
-
-sdkconfig: Ensure Bluetooth Classic and Bluedroid are enabled (use the provided sdkconfig).
-
-📡 MQTT Payload Example
-Messages are published to the topic firetv/remote:
-
-JSON
-
+// MAC address of your Fire TV remote
+esp_bd_addr_t remote_bda = {0x00, 0x00, 0x00, 0x8D, 0x00, 0x00};
+📡 MQTT Payload
+Topic: firetv/remote
+Code kopieren
+Json
 {
   "button": "OK",
-  "timestamp": 1245
+  "timestamp": 1710000000
 }
 🗺 Button Mapping
 Navigation: UP, DOWN, LEFT, RIGHT, OK
-
 Media: PLAY_PAUSE, SKIP_FORWARD, SKIP_REWIND
-
 System: HOME, BACK, MENU
-
-🚫 Microphone: Not supported.
-
+🚫 Microphone button is not supported
 📜 License
-MIT License.
-
-
----
-
-### 🇩🇪 Deutsche Version
-
-```markdown
-# ESP32 Fire TV Remote → MQTT Bridge 📺📡
-
-Dieses Projekt verbindet eine **Amazon Fire TV Fernbedienung (Modell BE59CV)** per **Bluetooth Classic** mit einem **ESP32**. 
-Der ESP32 liest die Tastensignale **direkt aus rohen L2CAP-Paketen** und sendet diese als **JSON-Payload an einen MQTT-Broker**.
-
-👉 **Ziel:** Die Fire-TV-Fernbedienung als universelle Steuerung für Home Assistant oder andere MQTT-basierte Smart-Home-Systeme nutzen.
-
----
-
-## 🔄 Update: Umstellung auf MQTT (v2.0)
-Die alte Version (direkte HTTPS-Befehle an WiiM-Geräte) wurde in den Ordner `legacy_https_version` verschoben. Die aktuelle Version nutzt **MQTT**, was das Projekt deutlich flexibler macht.
-
----
-
-## ⚠️ Wichtiger Hinweis / Disclaimer
-> **Dies ist mein allererstes ESP32-Projekt.**
-* Ich lerne ESP-IDF, Bluetooth Classic und L2CAP noch.
-* Der Code funktioniert in meinem Setup, aber es gibt **keinerlei Garantie**.
-* **Kein Support:** Ich kann keine technische Hilfe anbieten.
-* **Nutzung auf eigene Gefahr:** Keine Haftung für Schäden oder Sicherheitslücken.
-
----
-
-## 🔍 Technischer Ansatz & Debouncing
-Das Projekt nutzt keinen Standard-HID-Stack, sondern arbeitet direkt mit dem Bluedroid-Stack:
-* **L2CAP Direktzugriff:** Manuelle Registrierung der PSMs `0x11` (Control) und `0x13` (Interrupt).
-* **Raw Data Parsing:** Tasten-Bytes werden direkt aus `L2CA_DataInd_Cb` extrahiert.
-* **Software Debouncing:** Ein Zeitstempel-Check (`KEY_DEBOUNCE_MS = 200`) verhindert Mehrfach-Auslösungen bei einem Tastendruck.
-
----
-
-## 🚀 Features
-* ✅ **Bluetooth Classic Pairing:** Nutzt SSP (Secure Simple Pairing) mit Auto-Bestätigung.
-* ✅ **Software Debouncing:** Filtert Prellen mit einem 200ms Schwellenwert.
-* ✅ **MQTT Integration:** Versand von JSON-Daten inkl. Button-Name und Zeitstempel.
-* ✅ **WiFi Management:** Automatischer Reconnect bei Verbindungsabbruch.
-
----
-
-## 🛠 Konfiguration & Installation
-
-### 1. Code anpassen
-Passe die Werte in der `firetv_remote2mqtt.c` an:
-
-```c
-#define WIFI_SSID      "DEIN_WLAN"
-#define WIFI_PASSWORD  "DEIN_PASSWORT"
-#define MQTT_BROKER    "mqtt://192.168.xxx.xxx"
-
-// Die MAC-Adresse DEINER Fernbedienung
-esp_bd_addr_t remote_bda = {0x00, 0x00, 0x00, 0x8D, 0x00, 0x00}; 
-2. Build-Anforderungen
-ESP-IDF: v5.x (getestet mit 5.5.2).
-
-
-Komponenten: bt, nvs_flash und mqtt müssen in der CMakeLists.txt stehen. 
-
-sdkconfig: Bluetooth Classic muss aktiviert sein (beiliegende sdkconfig nutzen).
-
-📡 MQTT Datenformat
-Nachrichten werden an das Topic firetv/remote gesendet:
-
-JSON
-
-{
-  "button": "PLAY_PAUSE",
-  "timestamp": 1245
-}
-🗺 Tastenbelegung
-Navigation: UP, DOWN, LEFT, RIGHT, OK
-
-Media: PLAY_PAUSE, SKIP_FORWARD, SKIP_REWIND
-
-System: HOME, BACK, MENU
-
-🚫 Mikrofon: Nicht unterstützt.
-
+MIT License
+🇩🇪 Deutsche Version
+📌 Übersicht
+Dieses Projekt verbindet eine Amazon Fire TV Fernbedienung (Bluetooth Classic) direkt mit einem ESP32.
+Der ESP32 liest rohe L2CAP-HID-Daten, erkennt Tastendrücke und sendet diese als JSON per MQTT.
+👉 Ziel: Die Fire-TV-Fernbedienung als Eingabegerät für Home Assistant oder andere MQTT-basierte Systeme nutzen.
+🔄 Versionshistorie
+v0.2 (aktuell)
+✅ MQTT-basierte Architektur
+✅ Flexible Integration in Smart-Home-Systeme
+v0.1 (Legacy)
+🔁 Direkte HTTPS-Kommandos an WiiM-Geräte
+📁 Im Ordner legacy_https_version verfügbar
+⚠️ Sehr wichtiger Hinweis (ESP-IDF Version)
+🚨 Dieses Projekt wurde ausschließlich mit folgender Version entwickelt und getestet:
+ESP-IDF v5.5.2
+❗ Andere ESP-IDF-Versionen funktionieren sehr wahrscheinlich NICHT.
+Bluetooth Classic, Bluedroid und interne L2CAP-APIs sind extrem versionsabhängig.
+✅ Zwingend erforderlich:
+Die mitgelieferte CMakeLists.txt
+Die mitgelieferte sdkconfig / menuconfig
+Viele notwendige Bluetooth-Optionen wurden manuell gesetzt.
+Eine manuelle Nachkonfiguration wird nicht empfohlen.
+⚠️ Haftungsausschluss
+Dies ist mein erstes ESP32-Projekt.
+Ich lerne ESP-IDF, Bluetooth Classic und L2CAP noch.
+Der Code funktioniert in meinem Setup, aber ohne Garantie.
+❌ Kein Support
+⚠️ Nutzung auf eigene Gefahr
+🤖 Hinweis zur KI-gestützten Entwicklung
+Dieses Projekt wurde mit Unterstützung von KI-Tools erstellt.
+Teile des Codes sind möglicherweise nicht elegant oder optimal strukturiert.
+Der Fokus lag auf Funktionalität und Lernprozess, nicht auf perfektem Code-Design.
+Ich verstehe nicht jedes Low-Level-Detail vollständig, insbesondere im Bereich:
+Bluetooth Classic Internals
+Bluedroid / L2CAP APIs
+Das Projekt wird ohne Anspruch auf Perfektion und ausschließlich zu Lern- und Experimentierzwecken veröffentlicht.
+🔍 Technischer Ansatz
+Bluetooth Classic (Bluedroid)
+Direkter L2CAP-Zugriff
+Control PSM: 0x11
+Interrupt PSM: 0x13
+Raw HID Parsing
+Software-Debouncing (200 ms)
+WiFi + MQTT
+🚀 Features
+✅ Bluetooth Classic Pairing (SSP Auto-Accept)
+✅ Direkter L2CAP HID Zugriff
+✅ MQTT (JSON)
+✅ Automatischer WiFi-Reconnect
 📜 Lizenz
-MIT License.
+MIT License
+
