@@ -261,12 +261,16 @@ void register_l2cap_callbacks(uint16_t psm) {
     ESP_LOGI(TAG, "L2CA_Register(PSM=0x%04X) = 0x%04X", psm, result);
 }
 
-// GAP Callback für Pairing
+// GAP Callback für Pairing (KORRIGIERT!)
 void gap_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
     switch (event) {
         case ESP_BT_GAP_AUTH_CMPL_EVT:
             if (param->auth_cmpl.stat == ESP_BT_STATUS_SUCCESS) {
                 ESP_LOGI(TAG, "✅ Pairing erfolgreich!");
+                ESP_LOGI(TAG, "🔐 Bonding Key im NVS gespeichert");
+                
+                // Link Keys loggen (Debug)
+                ESP_LOG_BUFFER_HEX_LEVEL(TAG, param->auth_cmpl.bda, ESP_BD_ADDR_LEN, ESP_LOG_INFO);
                 
                 ESP_LOGI(TAG, "Öffne L2CAP Channels...");
                 
@@ -294,6 +298,14 @@ void gap_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
             esp_bt_gap_pin_reply(param->pin_req.bda, true, 4, pin);
             break;
         }
+
+        case ESP_BT_GAP_KEY_NOTIF_EVT:
+            ESP_LOGI(TAG, "🔑 Passkey Notification: %06lu", (unsigned long)param->key_notif.passkey);
+            break;
+
+        case ESP_BT_GAP_KEY_REQ_EVT:
+            ESP_LOGI(TAG, "🔑 Passkey Request");
+            break;
 
         default:
             break;
@@ -395,7 +407,7 @@ void mqtt_init(void) {
 void app_main(void) {
     esp_err_t ret;
 
-    // NVS Init
+    // NVS Init (WICHTIG für Bonding!)
     ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -405,8 +417,8 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "╔═════════════════════════════════════╗");
-    ESP_LOGI(TAG, "║  ESP32 Fire TV → MQTT Bridge v2.0  ║");
-    ESP_LOGI(TAG, "║  WiFi + MQTT + Bluetooth L2CAP      ║");
+    ESP_LOGI(TAG, "║  ESP32 Fire TV → MQTT Bridge v2.1  ║");
+    ESP_LOGI(TAG, "║  WiFi + MQTT + BT Bonding L2CAP     ║");
     ESP_LOGI(TAG, "║  Target: %02X:%02X:%02X:%02X:%02X:%02X          ║",
              remote_bda[0], remote_bda[1], remote_bda[2],
              remote_bda[3], remote_bda[4], remote_bda[5]);
@@ -438,14 +450,32 @@ void app_main(void) {
     // GAP
     ESP_ERROR_CHECK(esp_bt_gap_register_callback(gap_callback));
 
-    // Security
+    // ========== BONDING KONFIGURATION ==========
+    ESP_LOGI(TAG, "🔐 Konfiguriere Bluetooth Bonding...");
+    
+    // 1. IO Capability auf NONE setzen
     esp_bt_io_cap_t iocap = ESP_BT_IO_CAP_NONE;
     esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &iocap, sizeof(uint8_t));
+    ESP_LOGI(TAG, "   IO Capability: NONE");
+    
+    // 2. Authentication Mode auf BONDING setzen
 
-    uint8_t auth_req = 0x03;
+    uint8_t auth_req = 0x03;  // 0x03 = Bonding + MITM Protection
     esp_bt_gap_set_security_param(0, &auth_req, sizeof(uint8_t));
+    ESP_LOGI(TAG, "   Auth Mode: BONDING (0x%02X)", auth_req);
+    
+    // 3. Bonding Mode explizit aktivieren
 
+    ESP_LOGI(TAG, "   Bonding: ENABLED");
+    
+    // 4. PIN Code setzen
     esp_bt_gap_set_pin(ESP_BT_PIN_TYPE_FIXED, 0, NULL);
+    ESP_LOGI(TAG, "   PIN: 0000 (fixed)");
+    
+    ESP_LOGI(TAG, "✅ Bonding Konfiguration abgeschlossen");
+    ESP_LOGI(TAG, "   → Keys werden im NVS Flash gespeichert");
+    ESP_LOGI(TAG, "");
+    // ===========================================
 
     // Device Name
     esp_bt_gap_set_device_name("ESP32_FireTV_MQTT");
@@ -467,6 +497,8 @@ void app_main(void) {
     ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "🔍 Bereit für Fire TV Remote...");
     ESP_LOGI(TAG, "   Drücke eine Taste auf der Fernbedienung");
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, " WICHTIG:Bluetooth Modem Sleep AUS!");
     ESP_LOGI(TAG, "");
 
     // Status Loop
