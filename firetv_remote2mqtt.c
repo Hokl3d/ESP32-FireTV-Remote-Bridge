@@ -261,7 +261,7 @@ void register_l2cap_callbacks(uint16_t psm) {
     ESP_LOGI(TAG, "L2CA_Register(PSM=0x%04X) = 0x%04X", psm, result);
 }
 
-// GAP Callback für Pairing (KORRIGIERT!)
+// GAP Callback für Pairing
 void gap_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
     switch (event) {
         case ESP_BT_GAP_AUTH_CMPL_EVT:
@@ -275,12 +275,8 @@ void gap_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
                 ESP_LOGI(TAG, "Öffne L2CAP Channels...");
                 
                 l2cap_handle_ctrl = L2CA_ConnectReq(HID_PSM_CONTROL, remote_bda);
-                ESP_LOGI(TAG, "Control Channel LCID: 0x%04X", l2cap_handle_ctrl);
-                
                 vTaskDelay(pdMS_TO_TICKS(100));
-                
                 l2cap_handle_intr = L2CA_ConnectReq(HID_PSM_INTERRUPT, remote_bda);
-                ESP_LOGI(TAG, "Interrupt Channel LCID: 0x%04X", l2cap_handle_intr);
                 
             } else {
                 ESP_LOGE(TAG, "❌ Pairing fehlgeschlagen: %d", param->auth_cmpl.stat);
@@ -299,14 +295,44 @@ void gap_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
             break;
         }
 
-        case ESP_BT_GAP_KEY_NOTIF_EVT:
-            ESP_LOGI(TAG, "🔑 Passkey Notification: %06lu", (unsigned long)param->key_notif.passkey);
+        default:
             break;
+    }
+}
 
-        case ESP_BT_GAP_KEY_REQ_EVT:
-            ESP_LOGI(TAG, "🔑 Passkey Request");
+// Discovery Callback - findet die Remote
+void gap_discovery_callback(esp_bt_gap_cb_event_t event, esp_bt_gap_cb_param_t *param) {
+    switch (event) {
+        case ESP_BT_GAP_DISC_RES_EVT: {
+            if (memcmp(param->disc_res.bda, remote_bda, ESP_BD_ADDR_LEN) == 0) {
+                ESP_LOGI(TAG, "✅ Fire TV Remote gefunden!");
+                ESP_LOGI(TAG, "🔗 Starte Pairing-Vorbereitung...");
+                
+                // Discovery stoppen für stabilere Verbindung
+                esp_bt_gap_cancel_discovery(); 
+                
+                // Pairing via SSP bestätigen
+                esp_bt_gap_ssp_confirm_reply(remote_bda, true);
+                
+                // Verbindung triggern
+                l2cap_handle_ctrl = L2CA_ConnectReq(HID_PSM_CONTROL, remote_bda);
+            }
             break;
-
+        }
+        
+        case ESP_BT_GAP_DISC_STATE_CHANGED_EVT:
+            if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STOPPED) {
+                ESP_LOGI(TAG, "Discovery beendet");
+                if (!connected) {
+                    ESP_LOGI(TAG, "Noch nicht verbunden, warte kurz und suche erneut...");
+                    vTaskDelay(pdMS_TO_TICKS(2000));
+                    esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
+                }
+            } else if (param->disc_st_chg.state == ESP_BT_GAP_DISCOVERY_STARTED) {
+                ESP_LOGI(TAG, "🔍 Suche nach Geräten...");
+            }
+            break;
+            
         default:
             break;
     }
@@ -332,61 +358,40 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
 // WiFi initialisieren
 void wifi_init(void) {
     wifi_event_group = xEventGroupCreate();
-
     ESP_ERROR_CHECK(esp_netif_init());
     ESP_ERROR_CHECK(esp_event_loop_create_default());
     esp_netif_create_default_wifi_sta();
-
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL));
-
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = WIFI_SSID,
             .password = WIFI_PASSWORD,
         },
     };
-
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
-
-    ESP_LOGI(TAG, "WiFi gestartet - verbinde zu %s...", WIFI_SSID);
 }
 
 // ========== MQTT Event Handler ==========
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data) {
-    (void)handler_args;  // Unused parameter
-    (void)base;          // Unused parameter
-    (void)event_data;    // Nur event_id wird gebraucht
-    
     switch ((esp_mqtt_event_id_t)event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "✅ MQTT verbunden!");
             mqtt_connected = true;
-            
-            // Optional: Status-Topic publishen
             esp_mqtt_client_publish(mqtt_client, "firetv/status", "online", 0, 1, 1);
             break;
-
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGW(TAG, "MQTT getrennt");
             mqtt_connected = false;
             break;
-
-        case MQTT_EVENT_ERROR:
-            ESP_LOGE(TAG, "MQTT Error");
-            break;
-
-        default:
-            break;
+        default: break;
     }
 }
 
-// MQTT initialisieren
 void mqtt_init(void) {
     esp_mqtt_client_config_t mqtt_cfg = {
         .broker.address.uri = MQTT_BROKER,
@@ -395,125 +400,93 @@ void mqtt_init(void) {
             .authentication.password = MQTT_PASSWORD,
         },
     };
-
     mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
     esp_mqtt_client_register_event(mqtt_client, ESP_EVENT_ANY_ID, mqtt_event_handler, NULL);
     esp_mqtt_client_start(mqtt_client);
-
-    ESP_LOGI(TAG, "MQTT Client gestartet - verbinde zu %s...", MQTT_BROKER);
 }
 
 // ========== MAIN ======================================================================================
 void app_main(void) {
-    esp_err_t ret;
-
-    // NVS Init (WICHTIG für Bonding!)
-    ret = nvs_flash_init();
+    esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 
-    ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "╔═════════════════════════════════════╗");
-    ESP_LOGI(TAG, "║  ESP32 Fire TV → MQTT Bridge v2.1  ║");
-    ESP_LOGI(TAG, "║  WiFi + MQTT + BT Bonding L2CAP     ║");
-    ESP_LOGI(TAG, "║  Target: %02X:%02X:%02X:%02X:%02X:%02X          ║",
-             remote_bda[0], remote_bda[1], remote_bda[2],
-             remote_bda[3], remote_bda[4], remote_bda[5]);
+    ESP_LOGI(TAG, "║  ESP32 Fire TV → MQTT Bridge v2.4  ║");
     ESP_LOGI(TAG, "╚═════════════════════════════════════╝");
-    ESP_LOGI(TAG, "");
 
-    // WiFi starten
     wifi_init();
-    
-    // Warte auf WiFi
-    ESP_LOGI(TAG, "Warte auf WiFi Verbindung...");
     xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, false, true, portMAX_DELAY);
-    
-    // MQTT starten
     mqtt_init();
-    
-    // Kurz warten bis MQTT connected ist
     vTaskDelay(pdMS_TO_TICKS(2000));
 
-    // BT Controller
+    // BT Controller & Bluedroid
     esp_bt_controller_config_t bt_cfg = BT_CONTROLLER_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_bt_controller_init(&bt_cfg));
     ESP_ERROR_CHECK(esp_bt_controller_enable(ESP_BT_MODE_CLASSIC_BT));
-
-    // Bluedroid
     ESP_ERROR_CHECK(esp_bluedroid_init());
     ESP_ERROR_CHECK(esp_bluedroid_enable());
 
-    // GAP
-    ESP_ERROR_CHECK(esp_bt_gap_register_callback(gap_callback));
+    // GAP Register
+    esp_bt_gap_register_callback(gap_callback);
+    esp_bt_gap_register_callback(gap_discovery_callback);
 
     // ========== BONDING KONFIGURATION ==========
     ESP_LOGI(TAG, "🔐 Konfiguriere Bluetooth Bonding...");
-    
-    // 1. IO Capability auf NONE setzen
     esp_bt_io_cap_t iocap = ESP_BT_IO_CAP_NONE;
     esp_bt_gap_set_security_param(ESP_BT_SP_IOCAP_MODE, &iocap, sizeof(uint8_t));
-    ESP_LOGI(TAG, "   IO Capability: NONE");
     
-    // 2. Authentication Mode auf BONDING setzen
-
-    uint8_t auth_req = 0x03;  // 0x03 = Bonding + MITM Protection
-    esp_bt_gap_set_security_param(0, &auth_req, sizeof(uint8_t));
-    ESP_LOGI(TAG, "   Auth Mode: BONDING (0x%02X)", auth_req);
-    
-    // 3. Bonding Mode explizit aktivieren
-
-    ESP_LOGI(TAG, "   Bonding: ENABLED");
-    
-    // 4. PIN Code setzen
+    // Auth Mode: BONDING (Index 0 in aktuellen ESP-IDF Versionen oft als SP_AUTH_MODE genutzt)
+    uint8_t auth_req = 0x03; 
+    esp_bt_gap_set_security_param(0, &auth_req, sizeof(uint8_t)); 
     esp_bt_gap_set_pin(ESP_BT_PIN_TYPE_FIXED, 0, NULL);
-    ESP_LOGI(TAG, "   PIN: 0000 (fixed)");
-    
-    ESP_LOGI(TAG, "✅ Bonding Konfiguration abgeschlossen");
-    ESP_LOGI(TAG, "   → Keys werden im NVS Flash gespeichert");
-    ESP_LOGI(TAG, "");
     // ===========================================
 
-    // Device Name
     esp_bt_gap_set_device_name("ESP32_FireTV_MQTT");
-    
-    // Sichtbar machen
     esp_bt_gap_set_scan_mode(ESP_BT_CONNECTABLE, ESP_BT_GENERAL_DISCOVERABLE);
 
-    // L2CAP registrieren
-    ESP_LOGI(TAG, "Registriere L2CAP PSMs...");
-    
-    BTM_SetSecurityLevel(false, "", BTM_SEC_SERVICE_HIDD_INTR, 
-                         BTM_SEC_NONE, HID_PSM_INTERRUPT, 0, 0);
-    BTM_SetSecurityLevel(false, "", BTM_SEC_SERVICE_HCRP_CTRL, 
-                         BTM_SEC_NONE, HID_PSM_CONTROL, 0, 0);
-    
+    // L2CAP Security & Callbacks
+    BTM_SetSecurityLevel(false, "", BTM_SEC_SERVICE_HIDD_INTR, BTM_SEC_NONE, HID_PSM_INTERRUPT, 0, 0);
+    BTM_SetSecurityLevel(false, "", BTM_SEC_SERVICE_HCRP_CTRL, BTM_SEC_NONE, HID_PSM_CONTROL, 0, 0);
     register_l2cap_callbacks(HID_PSM_CONTROL);
     register_l2cap_callbacks(HID_PSM_INTERRUPT);
 
-    ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "🔍 Bereit für Fire TV Remote...");
-    ESP_LOGI(TAG, "   Drücke eine Taste auf der Fernbedienung");
-    ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, " WICHTIG:Bluetooth Modem Sleep AUS!");
-    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "🔍 Starte aktive Suche nach Remote...");
+    esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 10, 0);
 
-    // Status Loop
-    int heartbeat_counter = 0;
+    while (1) {
+        if (!connected) {
+            // Watchdog: Falls nicht verbunden, alle 10 Sekunden Suche sicherstellen
+            esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 5, 0);
+        } else {
+            static int heartbeat = 0;
+            if (++heartbeat % 10 == 0) ESP_LOGI(TAG, "💚 Aktiv & Verbunden");
+        }
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+    // ... am Ende von app_main ...
+    ESP_LOGI(TAG, "🔍 Starte aktive Suche und Reconnect-Loop...");
     
     while (1) {
-        if (connected) {
-            heartbeat_counter++;
-            if (heartbeat_counter % 30 == 0) {
-                ESP_LOGI(TAG, "💚 BT: Connected | MQTT: %s", mqtt_connected ? "Connected" : "Disconnected");
-            }
+        if (!connected) {
+            // Wenn nicht verbunden, wird versucht aktiv die Kanäle zu öffnen
+            // Das triggert bei Classic BT den Page Scan
+            L2CA_ConnectReq(HID_PSM_CONTROL, remote_bda);
+            
+            // Parallel suchen, falls die Remote im Discovery-Mode ist
+            esp_bt_gap_start_discovery(ESP_BT_INQ_MODE_GENERAL_INQUIRY, 5, 0);
+            
+            ESP_LOGD(TAG, "Versuche Reconnect zu %02x:%02x:%02x...", 
+                     remote_bda[0], remote_bda[1], remote_bda[2]);
         } else {
-            heartbeat_counter = 0;
+            static int heartbeat = 0;
+            if (++heartbeat % 12 == 0) { // Alle 60 Sek
+                ESP_LOGI(TAG, "💚 Verbindung steht. Warte auf Tastendruck...");
+            }
         }
-        
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(5000)); // Alle 5 Sekunden prüfen
     }
 }
